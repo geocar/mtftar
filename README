@@ -1,0 +1,42 @@
+mtftar is a tool for translating a MTF stream to a TAR stream.
+
+MTF is a format commonly found on Microsoft systems as it's what is generated
+by the NTBACKUP.EXE tool that ships with all modern versions of Windows.
+
+Usage: mtftar [-v] [-p] [-s setno] [patterns...] < backup.btf | tar xvf -
+       mtftar [-v] [-p] [-s setno] -f backup.btf [patterns...] | tar xvf -
+       mtftar [-v] [-p] [-s setno] -f backup.btf -o output.tar [patterns...]
+       mtftar [-v] [-p] [-s setno] -o output.tar [patterns...] < backup.btf
+       mtftar -l [-v] [-s setno] < backup.btf
+       mtftar -l [-v] [-s setno] -f backup.btf
+       mtftar -L [-v] [-s setno] < backup.btf
+       mtftar -L [-v] [-s setno] -f backup.btf
+
+mtftar is most often used as a filter, as in:
+
+	mtftar < MyBackup.bkf | tar xvf -
+
+mtftar can read Incremental, Differential, Copy, and Normal backups, but it
+does not understand them. If you are using these backup modes in separate
+bkf files, you should be careful to order your extractions.
+
+mtftar _should_ be able to read directly from the TAPE drive on Linux, and
+possibly other systems as well.
+
+mtftar can pre-filter the input stream as well as patch the pathnames
+on-the-fly. this is done with the -p option which "strips" what is matched
+as prefix on the patterns.
+
+mtftar does NOT understand the ACL streams, although patches would be accepted
+that translated these into the POSIX ACL extensions for the TAR format.
+
+
+parts of mtftar, and most of the best-knowledge on the bkf file format, and MTF
+in general comes from a hard-to-find program called "mtf" which I cannot find
+again, but seems to be written by a D. Alan Stewart. "mtf" crashed an awful
+lot, and generated bogus output frequently, but nevertheless, was invaluable
+in building mtftar. "mtf" was released under the GNU Public License version 2
+or any later version.
+
+UPDATE: http://www.layton-graphics.com/mtf/mtf-0.2.1.tgz seems to be the
+current location of the "mtf" program.
