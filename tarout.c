@@ -103,15 +103,13 @@ int tarout_heading(struct tar_stream *t, int type,
 				 * then chomp up to slash
 				 */
 				pfn_len = i;
-				for (i = 0; i - pfn_len > 155;) {
-					for (; i < pfn_len; i++) {
-						if (filename[i] == '/') {
-							pfn_len -= (i+1);
-						}
+				for (i = 0; pfn_len > 155; i++) {
+					if (filename[i] == '/') {
+						pfn_len = lfn - (filename + i + 1);
 					}
 				}
 				if (pfn_len > 0) {
-					pfn = filename+i+1;
+					pfn = filename+i;
 				}
 			} else {
 				pfn = filename;
