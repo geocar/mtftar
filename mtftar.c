@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 			/* have TAPE header/characteristics */
 			if (verbose) {
 				str = mtfscan_string(&s, mtfdb_tape_software(&s), '/');
-				fprintf(stderr, "MFT Generator: %s\n", str);
+				fprintf(stderr, "MTF Generator: %s\n", str);
 				free(str);
 
 				str = mtfscan_string(&s, mtfdb_tape_name(&s), '/');
