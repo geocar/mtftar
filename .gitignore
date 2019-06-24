@@ -1,0 +1,11 @@
+*.o
+mtftar
+md5/md5main
+
+# Eclipse
+.settings
+.cproject
+.project
+
+# KDevelop
+*.kdev4
