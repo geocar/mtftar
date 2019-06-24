@@ -1,8 +1,15 @@
+#include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/mtio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+
+#if defined(__APPLE__)
+#define __APPLE_API_OBSOLETE
+#include "apple-mtio.h"
+#else
+#include <sys/mtio.h>
+#endif
 
 #include "mtf.h"
 
@@ -21,7 +28,11 @@ int mtfscan_init(struct mtf_stream *s, int fd)
 			return 0;
 		}
 	} else {
+#ifdef MT_ST_BLKSIZE_MASK
 		s->blksize = (mg.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
+#else
+		s->blksize = mg.mt_blksiz;
+#endif
 	}
 
 	s->ready = 0;

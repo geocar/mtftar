@@ -1,5 +1,3 @@
-#include <features.h>
-
 #include "mtf.h"
 #include "tar.h"
 
@@ -109,7 +107,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'f':
 			fd = open(optarg, O_RDONLY|O_NOCTTY
+#ifdef O_LARGEFILE
 					| O_LARGEFILE
+#endif
 					);
 			if (fd == -1) {
 				perror(optarg);
