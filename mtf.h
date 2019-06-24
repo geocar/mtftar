@@ -219,6 +219,6 @@ int mtfscan_read(struct mtf_stream *s, unsigned char *buf, int chunk);
 int mtfscan_skip(struct mtf_stream *s);
 int mtfscan_start(struct mtf_stream *s);
 int mtfscan_next(struct mtf_stream *s);
-unsigned char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int sz);
+char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int sz);
 
 #endif

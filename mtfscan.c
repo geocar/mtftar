@@ -106,7 +106,7 @@ int mtfscan_next(struct mtf_stream *s)
 	s->flbread = 0;
 	return 1;
 }
-unsigned char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int sz)
+char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int sz)
 {
 	unsigned int i;
 	unsigned int n;
@@ -140,7 +140,7 @@ unsigned char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int s
 		}
 
 		/* convert to UTF8 */
-		p = out = (char *)malloc(n+1); /* for a terminating null */
+		p = out = malloc(n+1); /* for a terminating null */
 		if (!p) return 0;
 		for (i = n = 0; i < q.size; i += 2) {
 			uc = (unsigned char *)&s->buffer[q.pos + i];
@@ -172,7 +172,7 @@ unsigned char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int s
 		p[0] = 0; /* nul */
 	} else {
 		/* ascii (actually MSDOS CP 646) */
-		out = (char *)malloc(q.size+1);
+		out = malloc(q.size+1);
 		if (!out) return 0;
 		memcpy(out, &s->buffer[q.pos], q.size);
 		if (sz) {
@@ -181,6 +181,6 @@ unsigned char *mtfscan_string(struct mtf_stream *s, struct mtf_tape_pos q, int s
 		}
 		out[q.size] = 0;
 	}
-	return out;
+	return (char*)out;
 }
 
