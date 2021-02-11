@@ -88,7 +88,6 @@ int main(int argc, char *argv[])
 
 	char *fn, *dfn;
 	char *str;
-	int skipping_set;
 
 	time_t mtime;
 	int r;
@@ -179,7 +178,6 @@ int main(int argc, char *argv[])
 	if (fd == 0 && isatty(0)) usage(1);
 	mtfscan_init(&s, fd);
 
-	skipping_set = 0;
 	if (!listonly) tarout_init(&t, outfd);
 
 	if (dfn && skip_flb) {
@@ -272,11 +270,6 @@ int main(int argc, char *argv[])
 #endif
 		} else if (mtfdb_sset_type(&s)) {
 			/* set begin */
-			if (setno) {
-				if (mtfdb_sset_num(&s) != setno) {
-					skipping_set = 1;
-				}
-			}
 			if (verbose) {
 				fprintf(stderr, "-- Set#%d\n", mtfdb_sset_num(&s));
 
@@ -405,7 +398,6 @@ int main(int argc, char *argv[])
 
 		} else if (mtfdb_eset_type(&s)) {
 			if (setno) {
-				skipping_set = 0;
 				if (setno == mtfdb_eset_seq(&s)) {
 					/* we're all done */
 					break;
