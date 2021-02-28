@@ -9,19 +9,43 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <getopt.h>
+
+/*
+ * From this link, SQL Server uses a slightly different MTF spec, for which documentation seems to be unavailable:
+ *
+ * https://social.msdn.microsoft.com/Forums/en-US/f9feea7e-6bc2-4ec0-9193-91575100c816/i-am-looking-an-mtf-microsoft-tape-format-specification-which-is-100b-or-newer-does-anyone
+ * "I need to try and find the actual MTF Specification as I need to find out how to handle some descriptor
+ * blocks and streams that don't exist in the original ( Version 1.00a ) specification.  In my researching
+ * I have stumbled across this issue created on the Microsoft website. In the comments a
+ * Microsoft employee states that SQL Server uses MTF for it's backups. The version of MTF
+ * it uses is 1.02. It is this specification I am trying to find. ( This is the issue I have found :
+ * connect dot microsoft dot com/SQLServer/feedback/details/585729/backup-created-using-tape-format-1-240-on-win2k8-os-can-not-be-restored-on-win2k3-with-the-same-version-of-sql-server-2008r2  )"
+ */
 
 static void usage(int e)
 {
-	fprintf(stderr, "Usage: mtftar [-v] [-p] [-s setno] [patterns...] < backup.btf | tar xvf -\n");
-	fprintf(stderr, "       mtftar [-v] [-p] [-s setno] -f backup.btf [patterns...] | tar xvf -\n");
-	fprintf(stderr, "       mtftar [-v] [-p] [-s setno] -f backup.btf -o output.tar [patterns...]\n");
-	fprintf(stderr, "       mtftar [-v] [-p] [-s setno] -o output.tar [patterns...] < backup.btf\n");
-	fprintf(stderr, "       mtftar -l [-v] [-s setno] < backup.btf\n");
-	fprintf(stderr, "       mtftar -l [-v] [-s setno] -f backup.btf\n");
-	fprintf(stderr, "       mtftar -L [-v] [-s setno] < backup.btf\n");
-	fprintf(stderr, "       mtftar -L [-v] [-s setno] -f backup.btf\n");
+	fprintf(stderr, "Usage: mtftar [options] [patterns...] < backup.bkf | tar xvf -\n");
+	fprintf(stderr, "       mtftar [options] -f backup.bkf [patterns...] | tar xvf -\n");
+	fprintf(stderr, "       mtftar [options] -f backup.bkf -o output.tar [patterns...]\n");
+	fprintf(stderr, "       mtftar [options] -o output.tar [patterns...] < backup.bkf\n");
+	fprintf(stderr, "       mtftar -l [-v] [-s setno] < backup.bkf\n");
+	fprintf(stderr, "       mtftar -l [-v] [-s setno] -f backup.bkf\n");
+	fprintf(stderr, "       mtftar -L [-v] [-s setno] < backup.bkf\n");
+	fprintf(stderr, "       mtftar -L [-v] [-s setno] -f backup.bkf\n");
+	fprintf(stderr, "Where [options] can be any of:\n");
+	fprintf(stderr, "       -p         patching\n");
+	fprintf(stderr, "       --pax      use POSIX.1-2001 pax extended headers\n");
+	fprintf(stderr, "       -s setno   specify set number\n");
+	fprintf(stderr, "       -v         verbose\n");
 	exit(e);
 }
+
+static struct option long_options[] =
+{
+		{"pax", no_argument, NULL, 2001},
+		{0, 0, 0, 0}
+};
 
 static int seek_arg(const char *a, const char *b)
 {
@@ -76,7 +100,7 @@ int main(int argc, char *argv[])
 	struct tar_stream t;
 	unsigned int skip_flb;
 	int c, fd, setno, listonly, listindex;
-	int outfd, verbose;
+	int outfd, verbose, pax;
 	int patching;
 	off64_t idxpos;
 
@@ -96,11 +120,11 @@ int main(int argc, char *argv[])
 	fd = 0;
 	setno = 0;
 	listonly = listindex = 0;
-	verbose = 0;
+	verbose = pax = 0;
 	outfd = 1;
 	patching = 0;
 	dfn = 0;
-	while ((c = getopt(argc, argv, "pf:s:o:LlvX:h")) != -1) {
+	while ((c = getopt_long(argc, argv, "pf:s:o:LlvX:h", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'p':
 			patching = 1;
@@ -137,6 +161,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			verbose++;
+			break;
+		case 2001:
+			pax = 1;
 			break;
 		case 'X':
 			if (sizeof(idxpos) == sizeof(int)) {
@@ -226,7 +253,7 @@ int main(int argc, char *argv[])
 			if (((c = check_argmatch(patching, dfn, optind, argc, argv)) > -1)) {
 				/* write out TAR header */
 				tarout_file(&t, dfn+c, 0666, 0, 0, mtime,
-						mtf_stream_length(&s));
+						mtf_stream_length(&s), pax);
 				mtf_stream_copy(&s, outfd);
 				tarout_tail(&t);
 			}
@@ -250,7 +277,7 @@ int main(int argc, char *argv[])
 			/* have TAPE header/characteristics */
 			if (verbose) {
 				str = mtfscan_string(&s, mtfdb_tape_software(&s), '/');
-				fprintf(stderr, "MFT Generator: %s\n", str);
+				fprintf(stderr, "MTF Generator: %s\n", str);
 				free(str);
 
 				str = mtfscan_string(&s, mtfdb_tape_name(&s), '/');
@@ -301,7 +328,7 @@ int main(int argc, char *argv[])
 
 			mtime = mtfdb_volb_ctime(&s);
 			if (!listonly && (c = check_argmatch(patching, volume, optind, argc, argv)) > -1) {
-				tarout_dir(&t, volume+c, 0777, 0, 0, mtime);
+				tarout_dir(&t, volume+c, 0777, 0, 0, mtime, pax);
 				tarout_tail(&t);
 			}
 #ifdef DEBUG
@@ -331,7 +358,7 @@ int main(int argc, char *argv[])
 			}
 			sprintf(dfn, "%s/%s", volume, cwd);
 			if (!listonly && (c = check_argmatch(patching, dfn, optind, argc, argv)) > -1) {
-				tarout_dir(&t, dfn+c, 0777, 0, 0, mtime);
+				tarout_dir(&t, dfn+c, 0777, 0, 0, mtime, pax);
 				tarout_tail(&t);
 			}
 			free(dfn);
@@ -386,7 +413,7 @@ int main(int argc, char *argv[])
 				if (!listonly && ((c = check_argmatch(patching, dfn, optind, argc, argv)) > -1)) {
 					/* write out TAR header */
 					tarout_file(&t, dfn+c, 0666, 0, 0, mtime,
-							mtf_stream_length(&s));
+							mtf_stream_length(&s), pax);
 					mtf_stream_copy(&s, outfd);
 					tarout_tail(&t);
 				}
